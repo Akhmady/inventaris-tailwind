@@ -97,10 +97,7 @@
         <img id="previewImage" src="#" alt="Preview Gambar"
              class="hidden w-48 h-48 object-cover rounded-lg border border-gray-300 dark:border-gray-700">
     </div>
-  </div>
-  
-
-            
+  </div>  
             <div>
                 <button type="submit"
                         class="w-full py-3 px-4 bg-teal-600 text-white text-sm font-medium rounded-lg shadow hover:bg-teal-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:pointer-events-none">
@@ -142,8 +139,8 @@
     });
 
     const fileInput = document.getElementById('foto');
-  const fileName = document.getElementById('fileName');
-  const previewImage = document.getElementById('previewImage');
+    const fileName = document.getElementById('fileName');
+    const previewImage = document.getElementById('previewImage');
 
   fileInput.addEventListener('change', (event) => {
       const file = event.target.files[0];
