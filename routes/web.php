@@ -49,12 +49,14 @@ Route::get('/dashboard/chart', [Dashboard::class, 'chart'])->name('dashboard.cha
 Route::get('/ruangan', [RuanganController::class, 'index'])->name('ruangan');
 Route::get('/ruangan/create', [RuanganController::class, 'create'])->name('ruangan.create');
 Route::post('/ruangan', [RuanganController::class, 'store'])->name('ruangan.store');
+Route::get('/ruangan{id}',[RuanganController::class, 'show'])->name('ruangan.show');
 
 // Aset
 
 Route::get('/aset', [AsetController::class, 'index'])->name('aset');
 Route::get('/aset/create', [AsetController::class, 'create'])->name('aset.create');
 Route::post('/aset', [AsetController::class, 'store'])->name('aset.store');
+Route::get('/aset{id}',[AsetController::class, 'show'])->name('aset.show');
 
 
 require __DIR__.'/auth.php';
