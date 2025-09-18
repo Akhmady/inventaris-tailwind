@@ -6,6 +6,7 @@ use App\Http\Controllers\RuanganController;
 use App\Http\Controllers\AsetController;
 use App\Http\Controllers\Pengaturan;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AsetRuanganController;
 use App\Http\Controllers\Riwayat;
 use Illuminate\Support\Facades\Route;
 
@@ -46,17 +47,47 @@ Route::get('/dashboard/chart', [Dashboard::class, 'chart'])->name('dashboard.cha
 // Ruangan
 
 
-Route::get('/ruangan', [RuanganController::class, 'index'])->name('ruangan');
-Route::get('/ruangan/create', [RuanganController::class, 'create'])->name('ruangan.create');
-Route::post('/ruangan', [RuanganController::class, 'store'])->name('ruangan.store');
-Route::get('/ruangan{id}',[RuanganController::class, 'show'])->name('ruangan.show');
+Route::prefix('ruangan')->name('ruangan.')->group(function () {
+    Route::get('/', [RuanganController::class, 'index'])->name('index');
+    Route::get('/create', [RuanganController::class, 'create'])->name('create');
+    Route::post('/', [RuanganController::class, 'store'])->name('store');
+    Route::get('/{id}', [RuanganController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [RuanganController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [RuanganController::class, 'update'])->name('update');
+    Route::get('/{id}/delete', [RuanganController::class, 'deleteConfirm'])->name('deleteConfirm');
+    Route::delete('/{id}', [RuanganController::class, 'destroy'])->name('destroy');
+    Route::get('/search', [RuanganController::class, 'search'])->name('search');
+
+});
+
+// CRUD Aset per Ruangan 
+
+Route::prefix('ruangan/{ruangan}')->name('ruangan.')->group(function () {
+
+    Route::prefix('aset')->name('aset.')->group(function () {
+        Route::get('/create', [AsetRuanganController::class, 'create'])->name('create');
+        Route::post('/store', [AsetRuanganController::class, 'store'])->name('store');
+
+        // EDIT untuk satu GROUP (pakai index group saat dummy)
+        Route::get('/group/{group}/edit', [AsetRuanganController::class, 'edit'])->name('edit');
+        Route::put('/group/{group}', [AsetRuanganController::class, 'update'])->name('update');
+
+        // Hapus per unit berdasarkan kode unik (mis. F-MB-0001)
+        Route::delete('/{kode}', [AsetRuanganController::class, 'destroy'])->name('destroy');
+    });
+});
+
 
 // Aset
 
-Route::get('/aset', [AsetController::class, 'index'])->name('aset');
-Route::get('/aset/create', [AsetController::class, 'create'])->name('aset.create');
-Route::post('/aset', [AsetController::class, 'store'])->name('aset.store');
-Route::get('/aset{id}',[AsetController::class, 'show'])->name('aset.show');
+Route::prefix('aset')->name('aset.')->group(function (){
+    Route::get('/', [AsetController::class, 'index'])->name('index');
+    Route::get('/create', [AsetController::class, 'create'])->name('create');
+    Route::post('/', [AsetController::class, 'store'])->name('store');
+    Route::get('/{id}',[AsetController::class, 'show'])->name('show');
+});
+
+
 
 
 require __DIR__.'/auth.php';
