@@ -5,11 +5,16 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use App\Models\Aset;
 
 class AsetController extends Controller
 {
     public function index()
     {
+
+    // $data = Aset::paginate(5); // langsung pagination bawaan Eloquent
+    // return view('aset.aset', ['aset' => $data]);
+
         // Data dummy aset
         $dummyData = [
             ['nama' => 'Meja Bundar', 'tipe' => 'Furnitur'],
@@ -78,16 +83,28 @@ class AsetController extends Controller
         $request->validate([
             'namaAset' => 'required|string|max:255|unique:asets,namaAset',
             'tipeAset' => 'required|string|in:Furnitur,Elektronik,Dekorasi,Lainnya',
-            'foto' => 'required|image|mimes:jpeg,png,jpg,svg|max:2048',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,svg|max:2048',
         ]);
-
-        // $aset = new Aset();
-        // $aset->namaAset = $request->input('namaAset');
-        // $aset->tipeAset = $request->input('tipeAset');
-        // $aset->foto = $request->input('foto');
-
-        // $aset->save();
-
+    
+        // handle foto
+        if ($request->hasFile('foto')) {
+            $fotoName = time().'_'.$request->file('foto')->getClientOriginalName();
+            $request->file('foto')->storeAs('public/foto_aset', $fotoName);
+        } else {
+            $fotoName = 'placeholder.png';
+        }
+    
+        // generate kode aset
+        $kode = $this->generateKode($request->tipeAset, $request->namaAset);
+    
+        // simpan DB
+        $aset = new Aset();
+        $aset->namaAset = $request->namaAset;
+        $aset->tipeAset = $request->tipeAset;
+        $aset->kodeAset = $kode;
+        $aset->foto = $fotoName;
+        $aset->save();
+    
         return redirect()->route('aset.index')->with('success', 'Aset berhasil ditambahkan.');
     }
 }
