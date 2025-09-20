@@ -80,13 +80,13 @@ Route::prefix('ruangan/{ruangan}')->name('ruangan.')->group(function () {
 
 // Aset
 
+Route::resource('aset', AsetController::class);
+
 Route::prefix('aset')->name('aset.')->group(function () {
     Route::get('/', [AsetController::class, 'index'])->name('index');
     Route::get('/create', [AsetController::class, 'create'])->name('create');
     Route::post('/', [AsetController::class, 'store'])->name('store');
     Route::get('/{id}', [AsetController::class, 'show'])->name('show');
-
-    // Tambahan baru
     Route::get('/{id}/edit', [AsetController::class, 'edit'])->name('edit');
     Route::put('/{id}', [AsetController::class, 'update'])->name('update');
     Route::delete('/{id}', [AsetController::class, 'destroy'])->name('destroy');
