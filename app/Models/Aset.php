@@ -1,18 +1,16 @@
 <?php
-
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Aset extends Model
 {
-   use HasFactory;
+    protected $table = 'asets';
 
-   protected $fillable = [
-    'namaAset',
-    'tipeAset',
-    'kodeAset',
-    'foto',
-   ];
+    protected $fillable = [
+        'nama_aset',
+        'tipe_aset',
+        'kode_aset',
+        'foto_aset',
+    ];
 }
