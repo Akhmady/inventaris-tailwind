@@ -7,22 +7,32 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Jalankan migration untuk membuat tabel asets
      */
     public function up(): void
     {
         Schema::create('asets', function (Blueprint $table) {
-            $table->id();
-            $table->string('namaAset')->unique();
-            $table->string('tipeAset');
-            $table->string('kodeAset')->unique();
-            $table->string('foto')->nullable();
+            $table->id(); // Primary key (auto increment)
+            
+            // Nama Aset - teks max 64 karakter
+            $table->string('nama_aset', 64); 
+            
+            // Jenis Aset - dibatasi pilihan (enum)
+            $table->enum('jenis_aset', ['Furnitur', 'Elektronik', 'Dekorasi', 'Lainnya']);
+            
+            // Kode Aset - string unik (contoh: F-KU, E-KA)
+            $table->string('kode_aset')->unique();
+            
+            // Foto Aset - nama file saja, bisa null kalau pakai placeholder
+            $table->string('foto_aset')->nullable();
+            
+            // created_at & updated_at
             $table->timestamps();
         });
     }
 
     /**
-     * Reverse the migrations.
+     * Rollback migration (hapus tabel)
      */
     public function down(): void
     {
