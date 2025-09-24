@@ -13,4 +13,8 @@ class Aset extends Model
         'kode_aset',
         'foto_aset',
     ];
+
+    public function asetRuangan(){
+        return $this->hasMany(AsetRuangan::class);
+    }
 }
