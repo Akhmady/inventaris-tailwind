@@ -25,34 +25,23 @@ class AsetController extends Controller
     // --- Store ---
     public function store(Request $request)
     {
-        // Debug kalau masih error
-        // dd($request->all());
-
-        // Validasi input
         $validated = $request->validate([
-            'namaAset' => 'required|string|max:64',
-            'tipeAset' => 'required|string|in:Furnitur,Elektronik,Dekorasi,Lainnya',
-            'tipeLainnya' => 'nullable|string|max:32',
-            'fotoAset' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:8192',
+            'namaAset'    => 'required|string|max:64|unique:asets,nama_aset',
+            'tipeAset'    => 'required|string|in:Furnitur,Elektronik,Dekorasi,Lainnya',
+            'tipeLainnya' => 'nullable|string|max:64',
+            'foto'        => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:8192',
         ]);
 
-        // Tentukan tipe aset
         $tipe = $validated['tipeAset'] === 'Lainnya' && !empty($validated['tipeLainnya'])
-        ? $validated['tipeLainnya']
-        : $validated['tipeAset'];
+            ? $validated['tipeLainnya']
+            : $validated['tipeAset'];
 
-        // Generate kode aset
-        $kodeAset = $this->generateKodeAset($validated['namaAset'], $tipe);
+        $kodeAset = $this->generateUniqueKodeAset($validated['namaAset'], $tipe);
 
-        // Upload foto
-        if ($request->hasFile('fotoAset')) {
-            $fotoPath = $request->file('fotoAset')->store('foto_aset', 'public');
-        } else {
-            $fotoPath = 'foto_aset/placeholder.png';
-        }
-    
+        $fotoPath = $request->hasFile('foto')
+            ? $request->file('foto')->store('foto_aset', 'public')
+            : 'foto_aset/placeholder.png';
 
-        // Simpan data
         Aset::create([
             'nama_aset' => $validated['namaAset'],
             'tipe_aset' => $tipe,
@@ -63,42 +52,21 @@ class AsetController extends Controller
         return redirect()->route('aset.index')->with('success', 'Aset berhasil ditambahkan.');
     }
 
-    // --- Generate kode aset ---
-    private function generateKodeAset($tipe, $nama)
+    // --- Show ---
+    public function show($encryptedId)
     {
-        $prefixTipe = strtoupper(substr($tipe, 0, 1));
-        $words = explode(' ', $nama);
-
-        if (count($words) >= 2) {
-            $prefixNama = strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1));
-        } else {
-            $prefixNama = strtoupper(substr($nama, 0, 2));
+        try {
+            $id = Crypt::decrypt($encryptedId);
+        } catch (\Exception $e) {
+            abort(404, 'ID tidak valid');
         }
 
-        $kode = $prefixTipe . '-' . $prefixNama;
-
-        // Jika sudah ada → gunakan variasi huruf terakhir
-        if (Aset::where('kode_aset', $kode)->exists()) {
-            $prefixNama = strtoupper(substr($words[0], 0, 1) . substr(end($words), -1));
-            $kode = $prefixTipe . '-' . $prefixNama;
-        }
-
-        return $kode;
-    }
-    public function show($id)
-{
-    try {
-        $asetId = Crypt::decrypt($id);
-    } catch (\Exception $e) {
-        abort(404, 'ID tidak valid');
+        $aset = Aset::findOrFail($id);
+        return view('aset.detail', compact('aset'));
     }
 
-    $aset = Aset::findOrFail($asetId);
-
-    return view('aset.detail', compact('aset'));
-}
-
-public function edit($encryptedId)
+    // --- Edit ---
+    public function edit($encryptedId)
     {
         try {
             $id = Crypt::decrypt($encryptedId);
@@ -107,10 +75,10 @@ public function edit($encryptedId)
         }
 
         $aset = Aset::findOrFail($id);
-
         return view('aset.edit', compact('aset', 'encryptedId'));
     }
 
+    // --- Update ---
     public function update(Request $request, $encryptedId)
     {
         try {
@@ -121,55 +89,81 @@ public function edit($encryptedId)
 
         $aset = Aset::findOrFail($id);
 
-        // validasi
         $validated = $request->validate([
-            'namaAset'   => 'required|string|max:64',
-            'tipeAset'  => 'required|string|in:Furnitur,Elektronik,Dekorasi,Lainnya',
-            'tipeLainnya'=> 'nullable|required_if:jenisAset,Lainnya|string|max:64',
-            'foto'       => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:8192',
+            'namaAset'    => 'required|string|max:64|unique:asets,nama_aset,' . $id,
+            'tipeAset'    => 'required|string|in:Furnitur,Elektronik,Dekorasi,Lainnya',
+            'tipeLainnya' => 'nullable|required_if:tipeAset,Lainnya|string|max:64',
+            'foto'        => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:8192',
         ]);
 
-        // update nama + jenis
-        $aset->nama_aset  = $validated['namaAset'];
+        $aset->nama_aset = $validated['namaAset'];
         $aset->tipe_aset = ($validated['tipeAset'] === 'Lainnya')
             ? $validated['tipeLainnya']
             : $validated['tipeAset'];
 
-        // foto baru?
+        $aset->kode_aset = $this->generateUniqueKodeAset(
+            $validated['namaAset'],
+            $aset->tipe_aset,
+            $id // exclude dirinya sendiri
+        );
+
         if ($request->hasFile('foto')) {
-            // hapus lama jika bukan placeholder
             if ($aset->foto_aset && $aset->foto_aset !== 'foto_aset/placeholder.png') {
                 Storage::disk('public')->delete($aset->foto_aset);
             }
-
-            // simpan baru
-            $path = $request->file('foto')->store('foto_aset', 'public');
-            $aset->foto_aset = $path;
+            $aset->foto_aset = $request->file('foto')->store('foto_aset', 'public');
         }
 
         $aset->save();
 
-        return redirect()->route('aset.index', Crypt::encrypt($aset->id))
-            ->with('success', 'Data aset berhasil diperbarui.');
+        return redirect()->route('aset.index')->with('success', 'Data aset berhasil diperbarui.');
     }
 
+    // --- Destroy ---
     public function destroy($encryptedId)
-{
-    try {
-        $id = Crypt::decrypt($encryptedId);
-    } catch (\Exception $e) {
-        return redirect()->route('aset.index')->with('error', 'ID tidak valid.');
+    {
+        try {
+            $id = Crypt::decrypt($encryptedId);
+        } catch (\Exception $e) {
+            return redirect()->route('aset.index')->with('error', 'ID tidak valid.');
+        }
+
+        $aset = Aset::findOrFail($id);
+
+        if ($aset->foto_aset && $aset->foto_aset !== 'foto_aset/placeholder.png') {
+            Storage::disk('public')->delete($aset->foto_aset);
+        }
+
+        $aset->delete();
+
+        return redirect()->route('aset.index')->with('success', 'Data aset berhasil dihapus.');
     }
 
-    $aset = Aset::findOrFail($id);
+    // --- Generate kode aset unik ---
+    private function generateUniqueKodeAset(string $namaAset, string $tipeAset, int $excludeId = null): string
+    {
+        $prefixTipe = strtoupper(substr($tipeAset, 0, 1));
 
-    // hapus foto jika ada dan bukan placeholder
-    if ($aset->foto_aset && $aset->foto_aset !== 'foto_aset/placeholder.png') {
-        Storage::disk('public')->delete($aset->foto_aset);
+        $words = preg_split('/\s+/', trim($namaAset));
+        if (count($words) === 1) {
+            $basePrefix = strtoupper(substr($words[0], 0, 2));
+        } else {
+            $basePrefix = strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1));
+        }
+
+        $baseKode = $prefixTipe . '-' . $basePrefix;
+        $kode = $baseKode;
+        $counter = 1;
+
+        while (
+            Aset::where('kode_aset', $kode)
+                ->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId))
+                ->exists()
+        ) {
+            $kode = $baseKode . '-' . str_pad($counter, 2, '0', STR_PAD_LEFT); // F-MB-01, F-MB-02
+            $counter++;
+        }
+
+        return $kode;
     }
-
-    $aset->delete();
-
-    return redirect()->route('aset.index')->with('success', 'Data aset berhasil dihapus.');
-}
 }
