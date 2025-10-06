@@ -4,7 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Dashboard;
 use App\Http\Controllers\RuanganController;
 use App\Http\Controllers\AsetController;
-use App\Http\Controllers\Pengaturan;
+use App\Http\Controllers\PengaturanController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AsetRuanganController;
 use App\Http\Controllers\Riwayat;
@@ -28,8 +28,12 @@ Route::middleware('auth')->group(function () {
 
 
 Route::get('/riwayat', [Riwayat::class, 'index'])->name('riwayat');
-Route::get ('/pengaturan', [Pengaturan::class, 'index'])->name('pengaturan');
 
+
+Route::prefix('pengaturan')->name('pengaturan.')->group(function () {
+    Route::get('/', [PengaturanController::class, 'index'])->name('index');
+    Route::post('/update-name', [PengaturanController::class, 'updateName'])->name('updateName');
+});
 
 
 // Rute Login dan Autentikasi
@@ -47,6 +51,8 @@ Route::get('/dashboard/chart', [Dashboard::class, 'chart'])->name('dashboard.cha
 // Ruangan
 
 
+Route::resource('ruangan', RuanganController::class);
+
 Route::prefix('ruangan')->name('ruangan.')->group(function () {
     Route::get('/', [RuanganController::class, 'index'])->name('index');
     Route::get('/create', [RuanganController::class, 'create'])->name('create');
@@ -60,25 +66,21 @@ Route::prefix('ruangan')->name('ruangan.')->group(function () {
 
 });
 
-// CRUD Aset per Ruangan 
+// CRUD Aset per Ruangan ( AsetRuangan ) 
 
 Route::prefix('ruangan/{ruangan}')->name('ruangan.')->group(function () {
 
     Route::prefix('aset')->name('aset.')->group(function () {
         Route::get('/create', [AsetRuanganController::class, 'create'])->name('create');
         Route::post('/store', [AsetRuanganController::class, 'store'])->name('store');
-
-        // EDIT untuk satu GROUP (pakai index group saat dummy)
         Route::get('/group/{group}/edit', [AsetRuanganController::class, 'edit'])->name('edit');
         Route::put('/group/{group}', [AsetRuanganController::class, 'update'])->name('update');
-
-        // Hapus per unit berdasarkan kode unik (mis. F-MB-0001)
         Route::delete('/{kode}', [AsetRuanganController::class, 'destroy'])->name('destroy');
     });
 });
 
 
-// Aset
+// Aset Master
 
 Route::resource('aset', AsetController::class);
 
@@ -89,6 +91,7 @@ Route::prefix('aset')->name('aset.')->group(function () {
     Route::get('/{id}', [AsetController::class, 'show'])->name('show');
     Route::get('/{id}/edit', [AsetController::class, 'edit'])->name('edit');
     Route::put('/{id}', [AsetController::class, 'update'])->name('update');
+    Route::get('/{id}/delete', [AsetController::class, 'deleteConfirm'])->name('delete');
     Route::delete('/{id}', [AsetController::class, 'destroy'])->name('destroy');
 });
 
