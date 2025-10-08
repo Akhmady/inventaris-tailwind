@@ -32,14 +32,14 @@
 
             <!-- Detail Ruangan -->
             <h1 class="text-2xl font-bold  text-gray-800 dark:text-gray-100 mb-2">
-                {{ $ruangan['namaRuangan'] }}
+                {{ $ruangan['nama_ruangan'] }}
             </h1>
             <p class="text-gray-600 dark:text-gray-300 mb-4 ">
-                Penanggung Jawab: <span class="font-semibold">{{ $ruangan['penanggungJawab'] }}</span>
+                Penanggung Jawab: <span class="font-semibold">{{ $ruangan['penanggung_jawab'] }}</span>
             </p>
             <h2 class="text-gray-600 dark:text-gray-100 mb-2">Deskripsi Ruangan:</h2>
             <p class="text-gray-600 dark:text-gray-300 mb-6">
-                {{ $ruangan['deskripsi'] }}
+                {{ $ruangan['deskripsi_ruangan'] }}
             </p>
 
             <!-- Tabel Aset -->
@@ -78,49 +78,26 @@
                                 Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                        @forelse ($groupedAset as $index => $aset)
-                            <tr
-                                class="odd:bg-gray-50 even:bg-gray-100 dark:odd:bg-gray-800 dark:even:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600">
-                                <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
-                                    {{ $loop->iteration }}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-center text-gray-900 dark:text-gray-100">
-                                    {{ $aset['namaAset'] }}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-center text-gray-900 dark:text-gray-100">
-                                    {{ $aset['tipeAset'] }}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-center text-gray-900 dark:text-gray-100">
-                                    {{ $aset['kondisi'] }}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-center text-gray-900 dark:text-gray-100">
-                                    {{ $aset['jumlah'] }}
-                                </td>
-                                <td class="px-6 py-4 text-sm text-center flex justify-center gap-2">
-                                    <!-- Edit -->
-                                    <a href="{{ route('ruangan.aset.edit', [
-                                        'ruangan' => Crypt::encrypt($ruangan['id']),
-                                        'group' => Crypt::encrypt($index),
-                                    ]) }}"
-                                        class="px-2 py-1 rounded-lg text-gray-600 hover:text-green-600 dark:text-gray-300 dark:hover:text-green-400">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke-width="1.5" stroke="currentColor" class="size-6">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
-                                        </svg>
-                                    </a>
+                    <tbody>
 
-                                </td>
+                        @forelse ($aset as $item)
+                            <tr>
+                                <td>{{ $loop->iteration }}</td>
+                                <td>{{ $item->aset->nama_aset }}</td>
+                                <td>{{ $item->aset->tipe_aset }}</td>
+                                <td>{{ $item->kondisi }}</td>
+                                <td>{{ $item->total }}</td>
+                                <td> <x-icon-detail :item="$item"></x-icon-detail></td>
                             </tr>
+
                         @empty
                             <tr>
-                                <td colspan="6"
-                                    class="px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400">
-                                    Belum ada aset terdaftar
+                                <td colspan="4" class="text-center text-muted">
+                                    Tidak ada data aset yang ditemukan untuk ruangan ini.
                                 </td>
                             </tr>
                         @endforelse
+
                     </tbody>
                 </table>
             </div>
