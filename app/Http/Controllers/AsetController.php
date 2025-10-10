@@ -10,10 +10,22 @@ use Illuminate\Support\Facades\Storage;
 class AsetController extends Controller
 {
     // --- Index ---
-    public function index()
+    public function index(Request $request)
     {
-        $asets = Aset::orderBy('created_at', 'desc')->paginate(5);
-        return view('aset.aset', compact('asets'));
+        $asets = Aset::orderBy('created_at', 'asc')->paginate(5);
+        $search = $request->input('search');
+
+        $asets = Aset::when($search, function ($query, $search) {
+            $query->where('nama_aset', 'like', "%{$search}%")
+                  ->orWhere('tipe_aset', 'like', "%{$search}%")
+                  ->orWhere('kode_aset', 'like', "%{$search}%");
+        })
+        ->orderBy('created_at', 'asc')
+        ->paginate(5);
+    
+        return view('aset.aset', compact('asets', 'search'));
+       
+        
     }
 
     // --- Create ---
