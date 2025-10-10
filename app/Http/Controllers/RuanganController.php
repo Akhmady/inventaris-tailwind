@@ -2,46 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AsetRuangan;
+use App\Models\Ruangan;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Crypt;
-// use App\Models\Ruangan;
+use Illuminate\Support\Facades\DB;
 
 class RuanganController extends Controller
 {
     public function index(Request $request)
     {
-        // Dummy data
-        $dummyData = [['id' => 1, 'namaRuangan' => 'Ruang Rapat', 'penanggungJawab' => 'Fulan'], ['id' => 2, 'namaRuangan' => 'Ruang Server', 'penanggungJawab' => 'Ani'], ['id' => 3, 'namaRuangan' => 'Ruang Direktur', 'penanggungJawab' => 'Andi'], ['id' => 4, 'namaRuangan' => 'Ruang HRD', 'penanggungJawab' => 'Siti'], ['id' => 5, 'namaRuangan' => 'Ruang Marketing', 'penanggungJawab' => 'Joko'], ['id' => 6, 'namaRuangan' => 'Ruang Keuangan', 'penanggungJawab' => 'Rina'], ['id' => 7, 'namaRuangan' => 'Ruang Arsip', 'penanggungJawab' => 'Tono'], ['id' => 8, 'namaRuangan' => 'Ruang Meeting', 'penanggungJawab' => 'Ayu'], ['id' => 9, 'namaRuangan' => 'Ruang Lobi', 'penanggungJawab' => 'Budi']];
+        $ruangans = Ruangan::orderBy('created_at', 'asc')->paginate(5);
+        $search = $request->input('search');
 
-        if ($request->has('q')) {
-            $query = strtolower($request->q);
-            $dummyData = array_filter($dummyData, function ($item) use ($query) {
-                return str_contains(strtolower($item['namaRuangan']), $query) ||
-                       str_contains(strtolower($item['penanggungJawab']), $query);
-            });
-        }
-        // Pagination manual
-        $collection = collect($dummyData);
-        $perPage = 5;
-        $currentPage = LengthAwarePaginator::resolveCurrentPage();
-        $currentItems = $collection->slice(($currentPage - 1) * $perPage, $perPage)->values();
-
-        $ruangan = new LengthAwarePaginator($currentItems, $collection->count(), $perPage, $currentPage, [
-            'path' => $request->url(),
-            'query' => $request->query(),
-        ]);
-
-        $ruangan->withPath(route('ruangan.index'));
-
-        // DB versi (aktifkan nanti)
-        // $ruangan = \App\Models\Ruangan::paginate(10);
-
-        session(['ruangan' => $dummyData]);
-        
-        return view('ruangan.ruangan', compact('ruangan'));
-
-       
+        $ruangans = Ruangan::when($search, function ($query, $search) {
+            $query->where('nama_ruangan', 'like', "%{$search}%")
+                  ->orWhere('deskripsi_ruangan', 'like', "%{$search}%")
+                  ->orWhere('penanggung_jawab', 'like', "%{$search}%");
+        })
+        ->orderBy('created_at', 'asc')
+        ->paginate(5);
+        return view('ruangan.ruangan', compact('ruangans'));
     }
 
     public function create()
@@ -51,96 +32,73 @@ class RuanganController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'namaRuangan' => 'required|string|max:255|unique:ruangans,namaRuangan',
-            'penanggungJawab' => 'required|string|max:255',
-            'deskripsi' => 'nullable|string',
+        $validated = $request->validate([
+            'nama_ruangan'      => 'required|string|max:128|unique:ruangans,nama_ruangan',
+            'deskripsi_ruangan' => 'nullable|string',
+            'penanggung_jawab'  => 'required|string|max:64',
         ]);
 
-        // DB versi (aktifkan nanti)
-        // \App\Models\Ruangan::create($request->all());
+        Ruangan::create($validated);
 
         return redirect()->route('ruangan.index')->with('success', 'Ruangan berhasil ditambahkan.');
     }
 
-    public function show($encryptedId)
-    {
-        try {
-            $id = Crypt::decrypt($encryptedId);
-        } catch (\Exception $e) {
-            abort(404, 'ID tidak valid');
-        }
+   
 
-        // Dummy data Ruangan
-        $ruanganList = [['id' => 1, 'namaRuangan' => 'Ruang Rapat', 'penanggungJawab' => 'Fulan', 'deskripsi' => 'Ruangan khusus rapat internal dan eksternal.'], ['id' => 2, 'namaRuangan' => 'Ruang Server', 'penanggungJawab' => 'Ani', 'deskripsi' => 'Ruangan penyimpanan server dan perangkat jaringan.']];
-
-        $ruangan = collect($ruanganList)->firstWhere('id', $id);
-
-        if (!$ruangan) {
-            abort(404, 'Ruangan tidak ditemukan');
-        }
-
-        // Dummy data aset
-
-        $asetRuangan = [['id' => 1, 'namaAset' => 'Meja Bundar', 'tipeAset' => 'Furnitur', 'kodeAset' => 'F-MB-0001', 'kondisi' => 'Baik'], ['id' => 2, 'namaAset' => 'Meja Bundar', 'tipeAset' => 'Furnitur', 'kodeAset' => 'F-MB-0002', 'kondisi' => 'Rusak Ringan'], ['id' => 3, 'namaAset' => 'Meja Bundar', 'tipeAset' => 'Furnitur', 'kodeAset' => 'F-MB-0003', 'kondisi' => 'Baik'], ['id' => 4, 'namaAset' => 'Proyektor Epson', 'tipeAset' => 'Elektronik', 'kodeAset' => 'E-PE-0004', 'kondisi' => 'Baik']];
-
-        // Grouping by namaAset + tipeAset + kondisi
-        $groupedAset = collect($asetRuangan)
-            ->groupBy(function ($item) {
-                return $item['namaAset'] . '|' . $item['tipeAset'] . '|' . $item['kondisi'];
-            })
-            ->map(function ($group) {
-                return [
-                    'namaAset' => $group[0]['namaAset'],
-                    'tipeAset' => $group[0]['tipeAset'],
-                    'kondisi' => $group[0]['kondisi'],
-                    'jumlah' => $group->count(),
-                    'kodeList' => $group->pluck('kodeAset')->all(), // untuk aksi edit/hapus
-                ];
-            })
-            ->values();
-        // DB versi (aktifkan nanti)
-        // $ruangan = \App\Models\Ruangan::with('aset')->findOrFail($id);
-
-        return view('ruangan.detail', compact('ruangan', 'groupedAset'));
+public function show($id)
+{
+    try {
+        $ruanganId = Crypt::decrypt($id);
+    } catch (\Exception $e) {
+        abort(404, 'ID tidak valid');
     }
+
+    
+    $ruangan = Ruangan::findOrFail($ruanganId);
+
+
+    $aset = AsetRuangan::select('aset_id', 'kondisi', DB::raw('COUNT(*) as total'))
+    ->where('ruangan_id', $ruanganId)
+    ->groupBy('aset_id', 'kondisi')
+    ->with('aset') 
+    ->paginate(5); 
+
+    return view('ruangan.detail', compact('ruangan', 'aset'));
+}
+
 
     public function edit($encryptedId)
     {
         try {
-            $id = Crypt::decrypt($encryptedId);
+            $ruanganId = Crypt::decrypt($encryptedId);
         } catch (\Exception $e) {
             abort(404, 'ID tidak valid');
         }
 
-        // Dummy data (sementara)
-        $ruangan = ['id' => $id, 'namaRuangan' => 'Dummy Ruangan', 'penanggungJawab' => 'Dummy'];
+        $ruangan = Ruangan::findOrFail($ruanganId);
 
-        // DB versi (aktifkan nanti)
-        // $ruangan = \App\Models\Ruangan::findOrFail($id);
-
-        return view('ruangan.edit', compact('ruangan'));
+        return view('ruangan.edit', compact('ruangan', 'encryptedId')); 
     }
 
     public function update(Request $request, $encryptedId)
     {
         try {
-            $id = Crypt::decrypt($encryptedId);
+            $ruanganId = Crypt::decrypt($encryptedId);
         } catch (\Exception $e) {
-            abort(404, 'ID tidak valid');
+            return redirect()->route('ruangan.index')->with('error', 'ID tidak valid.');
         }
 
-        $request->validate([
-            'namaRuangan' => 'required|string|max:255',
-            'penanggungJawab' => 'required|string|max:255',
-            'deskripsi' => 'nullable|string',
+        $ruangan = Ruangan::findOrFail($ruanganId);
+
+        $validated = $request->validate([
+            'nama_ruangan'      => 'required|string|max:128|unique:ruangans,nama_ruangan,' . $ruanganId,
+            'deskripsi_ruangan' => 'nullable|string',
+            'penanggung_jawab'  => 'required|string|max:64',
         ]);
 
-        // DB versi (aktifkan nanti)
-        // $ruangan = \App\Models\Ruangan::findOrFail($id);
-        // $ruangan->update($request->all());
+        $ruangan->update($validated);
 
-        return redirect()->route('ruangan.show')->with('success', 'Detail Ruangan berhasil diperbarui');
+        return redirect()->route('ruangan.index')->with('success', 'Ruangan berhasil diperbarui.');
     }
 
     public function deleteConfirm($encryptedId)
@@ -148,58 +106,43 @@ class RuanganController extends Controller
         try {
             $id = Crypt::decrypt($encryptedId);
         } catch (\Exception $e) {
-            abort(404, 'ID tidak valid');
+            return redirect()->route('ruangan.index')->with('error', 'ID tidak valid.');
         }
-
-        // Dummy data (sementara)
-        $ruangan = [
-            'id' => $id,
-            'namaRuangan' => 'Dummy Ruangan',
-            'penanggungJawab' => 'Dummy',
-            'deskripsi' => 'Ruangan dummy untuk testing delete.'
-        ];
-
-        // DB versi (aktifkan nanti)
-        // $ruangan = \App\Models\Ruangan::findOrFail($id);
-
-        return view('ruangan.delete', compact('ruangan'));
+    
+        $ruangan = Ruangan::findOrFail($id);
+    
+        return view('ruangan.delete', compact('ruangan', 'encryptedId'));
     }
-
-    /**
-     * Hapus ruangan (beserta asetnya)
-     */
+    
     public function destroy($encryptedId)
     {
         try {
             $id = Crypt::decrypt($encryptedId);
         } catch (\Exception $e) {
-            abort(404, 'ID tidak valid');
+            return redirect()->route('ruangan.index')->with('error', 'ID tidak valid.');
         }
-
-        // Dummy mode (sementara tidak ada operasi DB)
-        // Misalnya hanya redirect sukses
-        // DB versi (aktifkan nanti)
-        // $ruangan = \App\Models\Ruangan::with('aset')->findOrFail($id);
-        // $ruangan->aset()->delete(); // hapus semua aset di ruangan ini
-        // $ruangan->delete();         // hapus ruangannya
-
-        return redirect()
-            ->route('ruangan.index')
-            ->with('success', 'Ruangan (beserta asetnya) berhasil dihapus.');
+    
+        $ruangan = Ruangan::findOrFail($id);
+    
+      
+        $ruangan->delete();
+    
+        return redirect()->route('ruangan.index')->with('success', 'Ruangan berhasil dihapus.');
     }
+    
 
     public function search(Request $request)
-{
-    $keyword = $request->get('q'); // nama parameter bebas, pakai 'q'
-    
-    $ruangan = collect(session('ruangan', [])) // sementara masih data dummy
-        ->filter(function ($r) use ($keyword) {
-            return stripos($r['namaRuangan'], $keyword) !== false;
-        })
-        ->values();
+    {
+        $keyword = $request->input('q');
 
-    return response()->json($ruangan);
-}
+        $ruangans = Ruangan::query()
+            ->where('nama_ruangan', 'like', "%{$keyword}%")
+            ->orWhere('penanggung_jawab', 'like', "%{$keyword}%")
+            ->orderBy('created_at', 'asc')
+            ->paginate(5);
+
+        return view('ruangan.ruangan', compact('ruangans', 'keyword'));
+    }
 }
 
 
