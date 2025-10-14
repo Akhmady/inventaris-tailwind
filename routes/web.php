@@ -67,17 +67,29 @@ Route::prefix('ruangan')->name('ruangan.')->group(function () {
 });
 
 // CRUD Aset per Ruangan ( AsetRuangan ) 
-
 Route::prefix('ruangan/{ruangan}')->name('ruangan.')->group(function () {
 
     Route::prefix('aset')->name('aset.')->group(function () {
         Route::get('/create', [AsetRuanganController::class, 'create'])->name('create');
         Route::post('/store', [AsetRuanganController::class, 'store'])->name('store');
-        Route::get('/group/{group}/edit', [AsetRuanganController::class, 'edit'])->name('edit');
-        Route::put('/group/{group}', [AsetRuanganController::class, 'update'])->name('update');
-        Route::delete('/{kode}', [AsetRuanganController::class, 'destroy'])->name('destroy');
+
+        // 🔧 Edit & Update aset grup (nama route diseragamkan)
+        Route::get('/group/{aset}/{kondisi}/edit', [AsetRuanganController::class, 'editGroup'])
+            ->where(['aset' => '[0-9]+', 'kondisi' => '.*'])
+            ->name('edit');
+
+        Route::put('/group/{aset}/{kondisi}', [AsetRuanganController::class, 'updateGroup'])
+            ->where(['aset' => '[0-9]+', 'kondisi' => '.*'])
+            ->name('update');
+
+        // 🔧 Hapus aset ruangan per ID
+        Route::delete('/{id}', [AsetRuanganController::class, 'destroy'])
+        ->where('id', '[0-9]+')
+        ->name('destroy');
     });
 });
+
+
 
 
 // Aset Master
