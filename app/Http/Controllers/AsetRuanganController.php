@@ -70,8 +70,101 @@ class AsetRuanganController extends Controller
             ->with('success', 'Aset berhasil ditambahkan ke ruangan.');
     }
     
+    public function editGroup($encryptedRuanganId, $asetId, $kondisi)
+    {
+        try {
+            $ruangan_id = Crypt::decrypt($encryptedRuanganId);
+        } catch (\Exception $e) {
+            abort(404, 'ID ruangan tidak valid');
+        }
     
+        $ruangan = Ruangan::findOrFail($ruangan_id);
+        $asetMaster = Aset::findOrFail($asetId);
+    
+        $asetRuangans = AsetRuangan::where('ruangan_id', $ruangan_id)
+            ->where('aset_id', $asetId)
+            ->where('kondisi', $kondisi)
+            ->orderBy('id', 'asc')
+            ->get();
+    
+        return view('ruangan.aset.edit', [
+            'ruangan' => $ruangan,
+            'asetRuangans' => $asetRuangans,
+            'asetMaster' => $asetMaster,
+            'kondisi' => $kondisi,
+        ]);
+    }
+    
+    
+    
+    public function updateGroup(Request $request, $encryptedRuanganId, $asetId, $kondisi)
+    {
+        try {
+            $ruangan_id = Crypt::decrypt($encryptedRuanganId);
+        } catch (\Exception $e) {
+            abort(404, 'ID ruangan tidak valid');
+        }
+    
+        // Ambil semua aset ruangan yang termasuk dalam grup ini
+        $asetRuangans = AsetRuangan::where('ruangan_id', $ruangan_id)
+            ->where('aset_id', $asetId)
+            ->where('kondisi', $kondisi)
+            ->get();
+    
+        // Validasi input dari form
+        $validated = $request->validate([
+            'kondisi' => 'required|array',
+            'kondisi.*' => 'required|string|in:Baik,Rusak Ringan,Rusak Berat',
+        ]);
+    
+        // Loop setiap unit yang dikirim dari form
+        foreach ($validated['kondisi'] as $id => $newCondition) {
+            $unit = $asetRuangans->where('id', $id)->first();
+            if ($unit && $unit->kondisi !== $newCondition) {
+                $unit->kondisi = $newCondition;
+                $unit->save();
+            }
+        }
+    
+        return redirect()
+            ->route('ruangan.show', Crypt::encrypt($ruangan_id))
+            ->with('success', 'Kondisi aset berhasil diperbarui.');
+    }
     
 
+    public function destroy($encryptedRuanganId, $id)
+    {
+        try {
+            $ruangan_id = Crypt::decrypt($encryptedRuanganId);
+        } catch (\Exception $e) {
+            abort(404, 'ID ruangan tidak valid');
+        }
+    
+        $asetRuangan = AsetRuangan::where('ruangan_id', $ruangan_id)
+            ->where('id', $id)
+            ->first();
+    
+        if (!$asetRuangan) {
+            abort(404, 'Aset tidak ditemukan');
+        }
+    
+        // Simpan data sebelum dihapus
+        $asetId = $asetRuangan->aset_id;
+        $kondisi = $asetRuangan->kondisi;
+    
+        $asetRuangan->delete();
+    
+        // Arahkan kembali ke halaman edit grup yang sama
+        return redirect()
+            ->route('ruangan.aset.edit', [
+                'ruangan' => $encryptedRuanganId,
+                'aset' => $asetId,
+                'kondisi' => $kondisi,
+            ])
+            ->with('success', 'Aset berhasil dihapus.');
+    }
+    
+    
+    
 
 }
