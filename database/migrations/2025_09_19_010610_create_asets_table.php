@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('nama_aset', 64); 
             
             // Jenis Aset - dibatasi pilihan (enum)
-            $table->enum('jenis_aset', ['Furnitur', 'Elektronik', 'Dekorasi', 'Lainnya']);
+            $table->enum('tipe_aset', ['Furnitur', 'Elektronik', 'Dekorasi', 'Lainnya']);
             
             // Kode Aset - string unik (contoh: F-KU, E-KA)
             $table->string('kode_aset')->unique();
