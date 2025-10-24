@@ -88,11 +88,11 @@
                         'label' => 'Aset',
                         'icon' => asset('assets/icons/aset.svg'),
                     ],
-                    'riwayat' => [
-                        'label' => 'Riwayat',
+                    'activitylog.index' => [
+                        'label' => 'Activity Log',
                         'icon' => asset('assets/icons/history.svg'),
                     ],
-                    'pengaturan' => [
+                    'pengaturan.index' => [
                         'label' => 'Pengaturan',
                         'icon' => asset('assets/icons/settings.svg'),
                     ],
