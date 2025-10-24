@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{
     ProfileController,
-    Dashboard,
+    DashboardController,
     RuanganController,
     AsetController,
     PengaturanController,
@@ -49,8 +49,13 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::get('/dashboard', [Dashboard::class, 'index'])->name('dashboard');
-    Route::get('/dashboard/chart', [Dashboard::class, 'chart'])->name('dashboard.chart');
+    Route::get('/dashboard', function () {
+        return view('dashboard.dashboard');
+    })->middleware('auth')->name('dashboard');
+    
+    Route::get('/dashboard/chart', [DashboardController::class, 'chartData'])
+        ->middleware('auth')
+        ->name('dashboard.chart');
 
 
 
