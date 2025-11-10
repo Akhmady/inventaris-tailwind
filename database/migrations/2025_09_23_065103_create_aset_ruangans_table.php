@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->integer('jumlah');
             $table->enum('kondisi',['Baik', 'Rusak Ringan', 'Rusak Berat']);
-            $table->string('kodeAset');
+            $table->string('kode_aset');
             $table->foreignId('ruangan_id')->references('id')->on('ruangans');
             $table->foreignId('aset_id')->references('id')->on('asets');
             $table->timestamps();
